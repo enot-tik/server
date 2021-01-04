@@ -10,7 +10,7 @@ using System.Text;
 
 namespace server.Handler
 {
-    class Connect
+    public class Connect
     {
         public int id { get; set; }
         public string token { get; set; }
@@ -28,9 +28,7 @@ namespace server.Handler
     [Route("api")]
     public class Main : ControllerBase
     {
-        private Query query = new Query();
-        private static Random rnd = new Random();
-        private static List<Connect> connects = new List<Connect> { };
+        public static List<Connect> connects = new List<Connect> { };
 
 
         [HttpGet]
@@ -39,38 +37,19 @@ namespace server.Handler
             return "hello";
         }
 
-        [HttpPost("auth/{password}")]
-        public string auth(string password)
+        public bool accept(string token)
         {
-            DataTable res = query.GetDataTable("SELECT * FROM workers");
-            if (res == null) return "w/o workers";
-            foreach (DataRow Row in res.Rows)
-            {
-                string pas = Convert.ToString(Row["password"]);
-                try
-                {
-                    if (password == pas)
-                    {
-                        int id = Convert.ToInt32(Row["id"]);
-                        if (connects.FirstOrDefault(x => x.id == id) != null) return "session exists";
-                        byte length = Convert.ToByte((Convert.ToInt32(Row["level"]) == 0) ? rnd.Next(30, 40) : rnd.Next(42, 65));
-                        string chars = "qwertyuiopasdfghjklzxcvbnm1234567890QWERTYUIOPASDFGHJKLZXCVBNM_$%";
-                        StringBuilder builder = new StringBuilder(length);
-                        for (int i = 0; i < length; ++i) 
-                            builder.Append(chars[rnd.Next(chars.Length)]);
-                        connects.Add(new Connect(id, builder.ToString(), DateTime.Now));
-                        return builder.ToString();
-                    }
-
-                }
-                catch
-                {
-                    // TODO: log system
-                }
+            Connect con = connects.FirstOrDefault(x => x.token == token);
+            if (con == null) return false;
+            if (con.accept.AddHours(10) > DateTime.Now) {
+                connects.Remove(con);
+                return false;
             }
-
-            return "noncorrect";
+            return true;
         }
+
+        [HttpPost("auth/{password}")]
+        public string auth(string password) => Tools.GenerationToken(password);
 
     }
 }

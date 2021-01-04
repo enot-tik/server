@@ -15,11 +15,11 @@ namespace server
 
         public Query()
         {
-            string constr = "Server=localhost;" +
+            string constr = $"Server={Config.Data.cfg.DBHost};" +
                                                 "Database=tik;" +
                                                 "User=root;";
             mycon = new MySqlConnection(constr);
-
+            Console.WriteLine("Database open");
             mycon.Open();
         }
 
@@ -28,7 +28,12 @@ namespace server
             DataTable res = new DataTable();
             res.Load(new MySqlCommand(sql, mycon).ExecuteReader());
             return res;
-            }
+        }
+        public void Send(string sql)
+        {
+            new MySqlCommand(sql, mycon).ExecuteNonQuery();
+            
+        }
 
     }
 }
