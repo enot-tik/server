@@ -14,6 +14,7 @@ namespace server.Config
     }
     public class Data
     {
+        private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
         public  static Cfg cfg = new Cfg();
         public static void Init()
         {

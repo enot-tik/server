@@ -4,7 +4,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using MySql.Data.MySqlClient;
 using VkNet;
+using VkNet.Enums.SafetyEnums;
 using VkNet.Model;
+using VkNet.Model.Keyboard;
 using VkNet.Model.RequestParams;
 
 namespace server.Handler
@@ -15,6 +17,7 @@ namespace server.Handler
         private static ulong? pts;
         private static VkApi api = new VkApi();
         private static Random rnd = new Random();
+        private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
         public static void Init()
         {
             api.Authorize(new ApiAuthParams
@@ -40,22 +43,38 @@ namespace server.Handler
                             break;
                     }
                 }
-
-
             }
-
-
         }
-        
+
         public static void HandlerMessage(Message mes)
         {
-            var user = Tools.query.GetDataTable($"SELECT * FROM users WHERE id = {mes.FromId}").Rows;
-            if (user.Count == 0)
+            try
             {
-                var num = GenerateNumber();
-                sms(mes.FromId, $"Ваш код: {num} \nПожалуйста не теряйте, чтобы узнать какая у вас скидка 'Скидка'(без кавычек)");
-                Tools.query.Send($"INSERT INTO users (id, code, moneys, level) VALUES ({mes.FromId}, '{num}', 0, 0)");
+                var user = Tools.query.GetDataTable($"SELECT * FROM users WHERE id = {mes.FromId}").Rows;
+                if (user.Count == 0)
+                {
+                    var num = GenerateNumber();
+                    sms(mes.FromId, $"Ваш код: {num} \nПожалуйста не теряйте, чтобы узнать какая у вас скидка 'Скидка'(без кавычек)");
+                    Tools.query.Send($"INSERT INTO users (id, code, moneys, level) VALUES ({mes.FromId}, '{num}', 0, 0)");
+                    return;
+                }
+                var target = user[0];
+                if (mes.Text.ToLower() == "скидка")
+                {
+                    sms(mes.FromId, $"Ваша скидка на данный момент: {GetSale(Convert.ToInt32(target["moneys"]))}%");
+                    return;
+                }
+                if (mes.Text.ToLower() == "код")
+                {
+                    sms(mes.FromId, $"Ваш код: {target["code"].ToString()}");
+                    return;
+                }
+                if (mes.Text.ToLower() == "adm" && Convert.ToInt32(target["level"]) == 1)
+                {
+                    return;
+                }
             }
+            catch (Exception e) { Logger.Error("EXCEPTION AT 'HandlerMessage':\n" + e.ToString()); }
         }
 
         private static string GenerateNumber()
@@ -73,7 +92,7 @@ namespace server.Handler
             return number;
         }
 
-        public int GetSale(int moneys)
+        public static int GetSale(int moneys)
         {
             if (moneys < 0)
                 return 0;
@@ -90,6 +109,7 @@ namespace server.Handler
 
         public static void sms(long? id, string message)
         {
+            Logger.Info($"\nto: {id} | {message}\n");
             if (id > 2000000000 || id < 0)
                 api.Messages.Send(new MessagesSendParams
                 {

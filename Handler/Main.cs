@@ -28,6 +28,7 @@ namespace server.Handler
     [Route("api")]
     public class Main : ControllerBase
     {
+        private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
         public static List<Connect> connects = new List<Connect> { };
 
 

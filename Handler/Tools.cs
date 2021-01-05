@@ -11,6 +11,7 @@ namespace server.Handler
     {
         private static Random rnd = new Random();
         public static Query query = new Query();
+        private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
         public static string GenerationToken(string password)
         {
             DataTable res = query.GetDataTable("SELECT * FROM workers");
